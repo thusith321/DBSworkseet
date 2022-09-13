@@ -1,0 +1,164 @@
+//WORK SHEET 1 
+//IT20668136
+
+ create table client(
+  clno char(3),
+  name varchar(7),
+  address varchar(30),
+  constraint client_PK PRIMARY KEY(clno) 
+  )
+  
+  create table stock(
+    company char(7),
+    price number(6,2),
+    divided number(4,2),
+    eps number(4,2),
+    constraint stock_PK PRIMARY KEY(company)
+  )
+  
+  create table trading(
+    company char(7),
+    exchange varchar (12),
+    constraint trading_PK PRIMARY KEY(company,exchange),
+    constraint trading_exchange_FK FOREIGN KEY(company) REFRENCES stock
+     )
+     
+     create table purchase(
+       clno char(3),
+       company char(7),
+       pdate date,
+       qty number(6),
+       price number(6,2),
+       constraint purchase_FK PRIMARY KEY(clno,company,pdate),
+       constraint purchase_clno_FK FOREIGN KEY(clno) REFRENCES client,
+       constraint purchase_company_FK FOREIGN KEY(company) REFRENCES stock
+       )
+
+
+
+// Inserting values for above tables
+
+INSERT INTO client VALUES ('C01','John Smith','3 East Av Bentley WA 6102')
+/
+INSERT INTO client VALUES ('C02','Jill Brody','42 Bent St Perth WA 6001')
+/
+--------------------------------------
+
+INSERT INTO stock VALUES ('BHP',10.50,1.50,3.20)
+/
+INSERT INTO stock VALUES ('IBM',70.00,4.25,10.00)
+/
+INSERT INTO stock VALUES ('INTEL',40.00,5.00,12.40)
+/
+INSERT INTO stock VALUES ('FORD',76.50,2.00,8.50)
+/
+INSERT INTO stock VALUES ('GM',60.00,2.50,9.20)
+/
+INSERT INTO stock VALUES ('INFOSYS',45.00,3.00,7.80)
+/
+
+---------------------------------------------------
+
+INSERT INTO  trading VALUES ('BHP','Sydney')
+/
+INSERT INTO  trading VALUES ('BHP','New York')
+/
+INSERT INTO  trading VALUES ('IBM','New York')
+/
+INSERT INTO  trading VALUES ('IBM','London')
+/
+INSERT INTO  trading VALUES ('IBM','Tokyo')
+/
+INSERT INTO  trading VALUES ('INTEL','New York')
+/
+INSERT INTO  trading VALUES ('INTEL','London')
+/
+INSERT INTO  trading VALUES ('FORD','New York')
+/
+INSERT INTO  trading VALUES ('GM','New York')
+/
+INSERT INTO  trading VALUES ('INFOSYS','New York')
+/
+
+---------------------------------------------
+INSERT INTO purchase VALUES ('C01','BHP', DATE '2001-10-02',1000,12.00)
+/
+INSERT INTO purchase VALUES('C01','BHP', DATE '2002-06-08',2000,10.50)
+/
+
+INSERT INTO purchase VALUES('C01','IBM', DATE '2000-02-12',500,58.00)
+/
+
+INSERT INTO purchase VALUES('C01','IBM', DATE '2001-04-10',1200,65.00)
+/
+
+INSERT INTO purchase VALUES('C01','INFOSYS', DATE '2001-08-11',1000,64.00)
+/
+
+INSERT INTO purchase VALUES ('C02','INTEL', DATE '2000-01-30',300,35.00)
+/
+
+INSERT INTO purchase VALUES('C02','INTEL', DATE '2001-01-30',400,54.00)
+/
+
+INSERT INTO purchase VALUES('C02','INTEL', DATE '2001-10-02',200,60.00)
+/
+
+INSERT INTO purchase VALUES('C02','FORD', DATE '1999-10-05',300,40.00)
+/
+
+INSERT INTO purchase VALUES('C02','GM', DATE '2000-12-12',500,55.50)
+/
+
+-------------------------------------------------------------------------
+
+
+//Querie Quections
+
+01.For each client, get the client’s name, and the list of the client’s investments with stock name, current price, last dividend and earnings per share.
+
+SELECT DISTINCT c.name,s.company,s.price,s.dividend,s.eps
+FROM client c , stock s ,purchase p
+WHERE c.clno = p.clno AND s.company = p.company  
+ORDER BY c.name
+/
+
+02.Get the list of all clients and their share investments, showing the client name, and for each stock held by the client, the name of the stock, 
+total number of shares held, and the average purchase price paid by the client for the stock. 
+Average price is the total purchase value paid by a client for a given stock (value=qty*price) divided by the total quantity held by the client.
+
+SELECT s.COMPANY,c.name, sum(p.qty)As total_number_of_shares, sum(p.qty*p.price)/sum(p.qty)AS Average_price_paid_by_the_client
+FROM client c , purchase p ,stock s 
+WHERE c.clno = p.clno AND s.COMPANY = p.COMPANY
+GROUP BY c.name , p.COMPANY
+ORDER BY p.COMPANY
+/
+
+03.For each stock traded in New York, find the quantity held by each client, and its current value (value=qty*price).
+ Display stock (company) name, client name, number of shares held, and the current value of the shares.
+
+
+SELECT s.company , c.name, sum(p.qty*p.price) AS number_of_Sheres_held , sum(s.price*p.qty) AS current_value_of_shares
+FROM client c, stock s, purchase p , trading t
+WHERE c.clno = p.clno AND s.company = p.company AND p.company = t.company AND t.exchange = 'New York'
+GROUP BY s.company , c.name
+ORDER BY s.company
+/
+
+04. Find the total purchase value of investments for all clients. Display client name and total purchase value of the client’s portfolio.
+
+SELECT c.name , SUM(p.price*p.qty) AS total_purchase_value
+FROM client c , purchase p
+WHERE c.clno = p.clno
+GROUP BY c.name
+ORDER BY c.name
+/
+
+05. For each client, list the book profit (or loss) on the total share investment. Book profit is the total value of all stocks based 
+on the current prices less the total amount paid for purchasing them.
+
+SELECT c.name , SUM(p.price*p.qty)-SUM(s.price*p.qty)AS book_profit
+FROM client c , stock s , purchase p
+WHERE c.clno = p.clno AND s.company = p.company
+GROUP BY c.name
+ORDER BY c.name
