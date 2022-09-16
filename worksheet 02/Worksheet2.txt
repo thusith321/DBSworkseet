@@ -1,0 +1,205 @@
+//20668136
+
+Part A)
+
+CREATE TYPE dept_t;
+/
+
+CREATE TYPE emp_t as OBJECT
+(
+EMPNO char(6),
+FIRSTNAME varchar(12),
+LASTNAME varchar(15),
+WORKDEPT REF dept_t,
+SEX char(1),
+BIRTHDATE date,
+SALARY number(8,2)
+)
+/
+
+
+
+CREATE TYPE dept_t as OBJECT
+(
+DEPTNO char(3),
+DEPTNAME varchar(36),
+MGRNO REF emp_t,
+ADMRDEPT REF dept_t
+)
+/
+
+b)
+
+CREATE TABLE OREMP of emp_t
+(
+constraint empt_pk primary key (EMPNO),
+constraint emp_c1 CHECK(FIRSTNAME IS NOT NULL),
+constraint emp_c2 CHECK(LASTNAME IS NOT NULL)
+)
+/
+
+ALTER TABLE OREMP ADD CONSTRAINT empt_fk FOREIGN KEY(WORKDEPT) references ORDEPT;
+
+
+CREATE TABLE ORDEPT of dept_t
+(
+constraint dept_pk primary key (DEPTNO),
+constraint dept_c1 CHECK(DEPTNAME IS NOT NULL),
+CONSTRAINT dept_fk1 FOREIGN KEY(MGRNO) references OREMP,
+CONSTRAINT dept_fk2 FOREIGN KEY(ADMRDEPT) references ORDEPT
+)
+/
+
+DROP TABLE OREMP;
+DROP TABLE ORDEPT;
+
+c)
+insert into OREMP values('000010','CHRISTINE','HAAS',NULL,'F','14-AUG-53',72750);
+insert into OREMP values('000020','MICHAEL','THOMPSON',NULL,'M','02-FEB-68',612550);
+insert into OREMP values('000030','SALLY','KWAN',NULL,'F','11-MAY-71',58250);
+insert into OREMP values('000060','IRVING','STERN',NULL,'M','07-JUL-65',55555);
+insert into OREMP values('000070','EVA','PULASKI',NULL,'F','26-MAY-73',56170);
+insert into OREMP values('000050','JOHN','GEYER',NULL,'M','15-SEP-55',60175);
+insert into OREMP values('000090','EILEEN','HENDERSON',NULL,'F','15-MAY-61',49750);
+insert into OREMP values('000100','THEODORE','SPENSER',NULL,'M','18-DEC-76',46150);
+
+insert into ORDEPT values('A00','SPIFFY COMPUTER SERVICE DIV',NULL,NULL);
+insert into ORDEPT values('B01','PLANNING',NULL,NULL);
+insert into ORDEPT values('C01','INFORMATION CENTRE ',NULL,NULL);
+insert into ORDEPT values('D01','DEVELOPEMENT CENTRE',NULL,NULL);
+
+select * from OREMP;
+select * from ORDEPT;
+
+update OREMP
+SET WORKDEPT = (select ref(D)
+from ORDEPT D
+where D.DEPTNO ='A00')
+WHERE EMPNO='000010';
+
+
+update OREMP
+SET WORKDEPT = (select ref(D)
+from ORDEPT D 
+where D.DEPTNO ='B01')
+WHERE EMPNO='000020';
+
+
+update OREMP
+SET WORKDEPT = (select ref(D)
+from ORDEPT D 
+where D.DEPTNO ='C01')
+WHERE EMPNO='000030';
+
+
+update OREMP
+SET WORKDEPT = (select ref(D)
+from ORDEPT D 
+where D.DEPTNO ='D01')
+WHERE EMPNO='000060';
+
+
+update OREMP
+SET WORKDEPT = (select ref(D)
+from ORDEPT D 
+where D.DEPTNO ='D01')
+WHERE EMPNO='000070';
+
+
+update OREMP
+SET WORKDEPT = (select ref(b)
+from ORDEPT b 
+where DEPTNO ='C01')
+WHERE EMPNO='000050';
+
+
+update OREMP
+SET WORKDEPT = (select ref(D)
+from ORDEPT D 
+where D.DEPTNO ='B01')
+WHERE EMPNO='000090';
+
+
+update OREMP
+SET WORKDEPT = (select ref(D)
+from ORDEPT D 
+where D.DEPTNO ='B01')
+WHERE EMPNO='000100';
+
+
+update ORDEPT
+SET MGRNO = (select ref(E)
+from OREMP E 
+where E.EMPNO ='000010')
+where DEPTNO ='A00';
+
+update ORDEPT
+SET ADMRDEPT =( select ref (E)
+from ORDEPT E
+where E.DEPTNO ='A00')
+WHERE DEPTNO='A00';
+
+
+
+update ORDEPT
+SET MGRNO = (select ref(E)
+from OREMP E 
+where E.EMPNO ='000020')
+where DEPTNO ='B01';
+
+update ORDEPT
+SET ADMRDEPT =( select ref (E)
+from ORDEPT E
+where E.DEPTNO ='A00')
+WHERE DEPTNO='B01';
+
+
+
+update ORDEPT
+SET MGRNO = (select ref(E)
+from OREMP E 
+where E.EMPNO ='000030')
+where DEPTNO ='C01';
+
+update ORDEPT
+SET ADMRDEPT =( select ref (E)
+from ORDEPT E
+where E.DEPTNO ='A00')
+WHERE DEPTNO='C01';
+
+
+
+
+update ORDEPT
+SET MGRNO = (select ref(E)
+from OREMP E 
+where E.EMPNO ='000060')
+where DEPTNO ='D01';
+
+update ORDEPT
+SET ADMRDEPT =( select ref (E)
+from ORDEPT E
+where E.DEPTNO ='C01')
+WHERE DEPTNO='D01';
+
+
+A)
+SELECT D.DEPTNAME, D.MGRNO.LASTNAME
+FROM ORDEPT D;
+
+B)
+SELECT E.EMPNO, E.LASTNAME, E.WORKDEPT.DEPTNAME
+FROM OREMP E;
+
+C)
+SELECT D.DEPTNO, D.DEPTNAME, D.ADMRDEPT.DEPTNAME
+FROM ORDEPT D;
+
+D)
+SELECT E.EMPNO, E.FIRSTNAME,E.LASTNAME, E.SALARY, E.WORKDEPT.MGRNO.LASTNAME,E.WORKDEPT.MGRNO.SALARY
+FROM OREMP E;
+
+E)
+SELECT E.WORKDEPT.DEPTNO,E.WORKDEPT.DEPTNAME, E.SEX, AVG(E.SALARY)
+FROM OREMP E 
+GROUP BY E.WORKDEPT.DEPTNO,E.WORKDEPT.DEPTNAME,E.SEX;
