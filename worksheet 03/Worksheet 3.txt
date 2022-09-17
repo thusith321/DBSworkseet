@@ -1,0 +1,125 @@
+2)
+create objects and tables
+
+CREATE TYPE excharry AS VARRAY(3) OF CHAR(10)
+/
+
+CREATE TYPE stock_type AS OBJECT(
+     company CHAR(10),
+     currnt_price NUMBER(4,2),
+     exchanges excharry,
+     dividend NUMBER(4,2),
+     earn NUMBER(4,2)
+)
+/
+
+CREATE TYPE addr_type AS OBJECT(
+    street_no NUMBER(2),
+    street_name VARCHAR2(10),
+    suburb CHAR(8),
+    state CHAR(2),
+    pin NUMBER(4)
+)
+/
+
+CREATE TYPE purchase_type AS OBJECT(
+       company REF stock_type,
+       purch_price NUMBER(4,2),
+       date DATE,
+       qty NUMBER(6)
+);
+
+CREATE TYPE purchase_table_type  AS TABLE OF purchase_type
+/
+       
+CREATE TYPE client_type AS OBJECT(
+      clno CHAR(3),
+      name VARCHAR2(20),
+      address addr_type,
+      Invesment purchase_table_type
+);
+/
+
+CREATE TABLE stocks OF stock_type(
+     CONSTRAINT stock_pk PRIMARY KEY(company)
+)
+/
+
+CREATE TABLE client OF client_type(
+          clno PRIMARY KEY
+)NESTED TABLE Invesment STORE AS purchase_list;
+/
+
+ALTER TABLE purchase_list
+ADD SCOPE FOR(company) IS stocks
+/
+
+-insert values-
+
+INSERT INTO stocks VALUES(stock_type('BHP',10.50,excharry('Sydney','New York'),1.50,3.20));
+INSERT INTO stocks VALUES(stock_type('IBM',70.00,excharry('New York','London','Tokyo'),4.25,10.00));
+INSERT INTO stocks VALUES(stock_type('INTEL',76.50,excharry('New York','London'),5.00,12.40));
+INSERT INTO stocks VALUES(stock_type('FORD',40.00,excharry('New York'),2.00,8.50));
+INSERT INTO stocks VALUES(stock_type('GM',60.00,excharry('New York'),2.50,9.20));
+INSERT INTO stocks VALUES(stock_type('INFOSYS',45.00,excharry('New York'),3.00,7.80));
+
+INSERT INTO client VALUES(client_type('C01','John Smith',addr_type(3,'East Av','Bentley','WA',6102),purchase_table_type(
+                                                                                                                                                                     purchase_type('BHP',12.00,'02/October/01',1000),
+                                                                                                                                                                     purchase_type('BHP', 10.50,'08/June/02',20                                                                                                                                                                                                    purchase_type('IBM', 58.00,'12/February/00',500),  
+                                                                                                                                                                     purchase_type('IBM', 65.00,'10/April/01',1200),  
+                                                                                                                                                                     purchase_type( 'INFOSYS',64.00,'11/August/01',1000)
+                                                        ))); 
+
+
+INSERT INTO client VALUES(client_type('C02','Jill Brody',addr_type(42,'Bent St','Perth','WA',6001),purchase_table_type(
+                                                                                                                                                                     purchase_type( 'INTEL',35.00,'30/January/00',300),
+                                                                                                                                                                     purchase_type( 'INTEL',54.00,'30/January/01',400),                                                                                                                                                                                      purchase_type('INTEL',60.00,'02/October/01',200),  
+                                                                                                                                                                     purchase_type('FORD',40.00,'05/October/99',300),  
+                                                                                                                                                                     purchase_type('GM',55.50,'12/December/00',500)
+                                                        ))); 
+
+
+3)
+a)
+SELECT c.name, i.* , i.company.currnt_price, i.company.dividend, i.company.earn
+FROM client c , TABLE(c.Invesment) i
+/
+
+b)
+SELECT c.name,i.company,SUM(i.qty) Total_qty,SUM(i.purch_price*i.qty)/SUM(i.qty) Avg_Pur_Price
+FROM client c , TABLE(c.Invesment) i
+GROUP BY i.company,c.name
+/
+
+c)
+SELECT c.name,i.company,SUM(i.qty) Total_qty,SUM(i.qty*i.purch_price)Current_value
+FROM client c, TABLE(c.Invesment) i
+WHERE i.company.exchanges = 'New York'
+GROUP BY c.name,i.company
+/
+
+d)
+SELECT c.name,SUM(i.qty*i.purch_price)Total_Pur_value
+FROM client c,TABLE(SELECT c.Invesment) i
+GROUP BY c.name
+/
+
+e)
+SELECT c.name,SUM(i.qty*i.company.currnt_price)-SUM(i.qty*i.purch_price) Book_profit
+FROM client c, TABLE(SELECT c.Invesment) i
+GROUP BY c.name
+/
+
+
+4)
+DELETE TABLE(SELECT c.purchase FROM client c WHERE c.name = 'John Smith') i
+WHERE i.company = 'INFOSYS'
+/
+
+INSERT INTO TABLE(SELECT c.purchase FROM client c WHERE c.name = 'John Smith') VALUES('GM',60.00,' 12/12/00',500);
+
+DELETE TABLE(SELECT c.purchase FROM client c WHERE c.name = 'Jill Brody') i
+WHERE i.company = 'GM'
+/
+
+INSERT INTO TABLE(SELECT c.purchase FROM client c WHERE c.name = 'Jill Brody') VALUES('INFOSYS',45.00,'11/08/01',1000);
